@@ -50,7 +50,7 @@ class SensorData(object):
         gpio.setmode(gpio.BOARD)
         gpio.setup(self.sensor_constants.ready_pin, gpio.IN)
         gpio.setup(self.sensor_constants.light_int_pin, gpio.IN)
-        gpio.setup(self.sensor_constants.ound_int_pin, gpio.IN)
+        gpio.setup(self.sensor_constants.sound_int_pin, gpio.IN)
 
         # Initialize the I2C communications bus object
         # Port 1 is the default for I2C on Raspberry Pi
