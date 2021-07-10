@@ -79,12 +79,12 @@ def format_air_data(
             Default is True.
     """
     data = dict()
-    data['Temperature (Celsius)'] = f'{SensorData.temp_c:.1f} C'
-    data['Temperature (Fahrenheit)'] = f'{SensorData.temp_f:.1f} F'
-    data['Pressure'] = f'{SensorData.pressure} Pa'
-    data['Humidity'] = f'{SensorData.humidity:.1f} %'
+    data['Temperature (Celsius)'] = f'{sensor_data.temp_c:.1f} C'
+    data['Temperature (Fahrenheit)'] = f'{sensor_data.temp_f:.1f} F'
+    data['Pressure'] = f'{sensor_data.pressure} Pa'
+    data['Humidity'] = f'{sensor_data.humidity:.1f} %'
     data['Gas Sensor Resistance'] = (
-        f'{SensorData.gas_sensor_resistance} {UnicodeConstants.ohm}'
+        f'{sensor_data.gas_sensor_resistance} {UnicodeConstants.ohm}'
     )
 
     if file_path:
@@ -108,21 +108,21 @@ def format_air_quality_data(
             Default is True.
     """
     data = dict()
-    if (SensorData.aqi_accuracy > 0):
+    if (sensor_data.aqi_accuracy > 0):
         data['Air Quality Index'] = (
-            f'{SensorData.aqi:.1f} ({SensorData.aqi_accuracy})'
+            f'{sensor_data.aqi:.1f} ({sensor_data.aqi_accuracy})'
         )
         data[f'Estimated CO{UnicodeConstants.subscript_2}'] = (
-            f'{SensorData.co2e:.1f} ppm'
+            f'{sensor_data.co2e:.1f} ppm'
         )
-        data['Equivalent Breath VOC'] = f'{SensorData.bvoc:.2f} ppm'
+        data['Equivalent Breath VOC'] = f'{sensor_data.bvoc:.2f} ppm'
 
     else:
         data['Air Quality Index'] = 'N/A'
         data[f'Estimated CO{UnicodeConstants.subscript_2}'] = 'N/A'
         data['Equivalent Breath VOC'] = 'N/A'
 
-    data['Air Quality Accuracy'] = SensorData.int_aqi
+    data['Air Quality Accuracy'] = sensor_data.int_aqi
 
     if file_path:
         write_data(file_path, data, overwrite)
@@ -145,8 +145,8 @@ def format_light_data(
             Default is True.
     """
     data = dict()
-    data['Illuminance'] = f'{SensorData.lux:.2f} lux'
-    data['White Light Level'] = f'{SensorData.white}'
+    data['Illuminance'] = f'{sensor_data.lux:.2f} lux'
+    data['White Light Level'] = f'{sensor_data.white}'
 
     if file_path:
         write_data(file_path, data, overwrite)
@@ -169,15 +169,15 @@ def format_sound_data(
             Default is True.
     """
     data = dict()
-    data['A-weighted Sound Pressure Level'] = f'{SensorData.spl_dba:.1f} dBA'
+    data['A-weighted Sound Pressure Level'] = f'{sensor_data.spl_dba:.1f} dBA'
 
-    for i in range(0, len(SensorData.spl_bands_db)):
+    for i in range(0, len(sensor_data.spl_bands_db)):
         data[
             f'Frequency Band {i + 1} '
-            f'({SensorConstants.sound_band_mids_Hz[i]} Hz SPL)'
-        ] = f'{SensorData.spl_bands_db[i]:.1f} dB'
+            f'({SensorConstants().sound_band_mids_Hz[i]} Hz SPL)'
+        ] = f'{sensor_data.spl_bands_db[i]:.1f} dB'
 
-    dict['Peak Sound Amplitude'] = f'{SensorData.peak_amp:.2f} mPa'
+    dict['Peak Sound Amplitude'] = f'{sensor_data.peak_amp:.2f} mPa'
 
     if file_path:
         write_data(file_path, data, overwrite)
@@ -200,12 +200,12 @@ def format_particle_data(
             Default is True.
     """
     data = dict()
-    data['Particle Sensor Duty Cycle'] = f'{SensorData.duty_cycle_pc:.2f} %'
+    data['Particle Sensor Duty Cycle'] = f'{sensor_data.duty_cycle_pc:.2f} %'
     data['Particle Concentration'] = (
-        f'{SensorData.concentration:.2f} {SensorData.conc_unit}'
+        f'{sensor_data.concentration:.2f} {sensor_data.conc_unit}'
     )
 
-    if SensorData.particle_data_valid == 0:
+    if sensor_data.particle_data_valid == 0:
         data['Particle data valid'] = 'No (Initializing)'
     else:
         data['Particle data valid'] = 'Yes'
