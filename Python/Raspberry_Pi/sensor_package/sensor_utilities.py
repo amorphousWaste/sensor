@@ -174,7 +174,7 @@ def format_sound_data(
     for i in range(0, len(sensor_data.spl_bands_db)):
         data[
             f'Frequency Band {i + 1} '
-            f'({SensorConstants().sound_band_mids_Hz[i]} Hz SPL)'
+            f'({SensorConstants().sound_band_mids_hz[i]} Hz SPL)'
         ] = f'{sensor_data.spl_bands_db[i]:.1f} dB'
 
     dict['Peak Sound Amplitude'] = f'{sensor_data.peak_amp:.2f} mPa'
