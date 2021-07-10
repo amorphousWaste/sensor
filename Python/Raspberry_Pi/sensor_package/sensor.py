@@ -18,25 +18,28 @@ from unicode_constants import UnicodeConstants
 class SensorData(object):
     """SensorData class."""
 
-    def __init__(
-        self,
-        particle_sensor: Optional[int] = SensorConstants.particle_sensor_off
-    ):
+    def __init__(self, particle_sensor: Optional[int] = None):
         """Init.
 
         The possibilities for the particle sensor are:
-            SensorConstants.particle_sensor_off: if no sensor is connected
-            SensorConstants.particle_sensor_ppd42: for the Shinyei PPD42
-            SensorConstants.particle_sensor_sds011: for the Nova SDS011
+            SensorConstants().particle_sensor_off: if no sensor is connected
+            SensorConstants().particle_sensor_ppd42: for the Shinyei PPD42
+            SensorConstants().particle_sensor_sds011: for the Nova SDS011
 
         Args:
             particle_sensor (int): The type of particle sensor attached,
                 if any.
-                Default is SensorConstants.particle_sensor_off (0)
+                Default is None which will become:
+                    SensorConstants.particle_sensor_off (0)
         """
         super(SensorData, self).__init__()
 
+        self.sensor_constants = SensorConstants()
+        self.unicode_constants = UnicodeConstants()
+
         self.particle_sensor = particle_sensor
+        if not self.particle_sensor:
+            self.particle_sensor = self.sensor_constants.particle_sensor_off
 
         self._init_hardware()
         self.refresh()
@@ -45,40 +48,41 @@ class SensorData(object):
         """Set up the Raspberry Pi GPIO."""
         gpio.setwarnings(False)
         gpio.setmode(gpio.BOARD)
-        gpio.setup(SensorConstants.ready_pin, gpio.IN)
-        gpio.setup(SensorConstants.light_int_pin, gpio.IN)
-        gpio.setup(SensorConstants.ound_int_pin, gpio.IN)
+        gpio.setup(self.sensor_constants.ready_pin, gpio.IN)
+        gpio.setup(self.sensor_constants.light_int_pin, gpio.IN)
+        gpio.setup(self.sensor_constants.ound_int_pin, gpio.IN)
 
         # Initialize the I2C communications bus object
         # Port 1 is the default for I2C on Raspberry Pi
         self.i2c_bus = smbus.SMBus(1)
 
         # Wait for the MS430 to finish power-on initialization:
-        while (gpio.input(SensorConstants.ready_pin) == 1):
+        while (gpio.input(self.sensor_constants.ready_pin) == 1):
             sleep(0.05)
 
         # Reset MS430 to clear any previous state:
         self.i2c_bus.write_byte(
-            SensorConstants.i2c_addr_7bit_sb_open, SensorConstants.reset_cmd
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.reset_cmd
         )
         sleep(0.005)
 
         # Wait for reset completion and entry to standby mode
-        while (gpio.input(SensorConstants.ready_pin) == 1):
+        while (gpio.input(self.sensor_constants.ready_pin) == 1):
             sleep(0.05)
 
         # Tell the Pi to monitor READY for a falling edge event
         # (high-to-low voltage change)
-        gpio.add_event_detect(SensorConstants.ready_pin, gpio.FALLING)
+        gpio.add_event_detect(self.sensor_constants.ready_pin, gpio.FALLING)
 
         # Initiate an on-demand data measurement
         self.i2c_bus.write_byte(
-            SensorConstants.i2c_7bit_address,
-            SensorConstants.on_demand_measure_cmd
+            self.sensor_constants.i2c_7bit_address,
+            self.sensor_constants.on_demand_measure_cmd
         )
 
         # Wait for the ready signal (falling edge) before continuing
-        while (not gpio.event_detected(SensorConstants.ready_pin)):
+        while (not gpio.event_detected(self.sensor_constants.ready_pin)):
             sleep(0.05)
 
         # Brief final sleep to stabalize sensors
@@ -102,59 +106,64 @@ class SensorData(object):
     def get_air_data(self):
         """Get air data."""
         self.raw_air_data = self.i2c_bus.read_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.air_data_read,
-            SensorConstants.air_data_bytes
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.air_data_read,
+            self.sensor_constants.air_data_bytes
         )
         self._extract_air_data()
 
     def get_air_quality_data(self):
         """Get air quality data."""
         self.raw_air_quality_data = self.i2c_bus.read_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.air_quality_data_read,
-            SensorConstants.air_quality_data_bytes
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.air_quality_data_read,
+            self.sensor_constants.air_quality_data_bytes
         )
         self._extract_air_quality_data()
 
     def get_light_data(self):
         """Get light data."""
         self.raw_light_data = self.i2c_bus.read_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.light_data_read,
-            SensorConstants.light_data_bytes
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.light_data_read,
+            self.sensor_constants.light_data_bytes
         )
         self._extract_light_data()
 
     def get_sound_data(self):
         """Get sound data."""
         self.raw_sound_data = self.i2c_bus.read_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.sound_data_read,
-            SensorConstants.sound_data_bytes
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.sound_data_read,
+            self.sensor_constants.sound_data_bytes
         )
         self._extract_sound_data()
 
     def get_particle_data(self):
         """Get particle data."""
         self.raw_particle_data = self.i2c_bus.read_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.particle_data_read,
-            SensorConstants.particle_data_bytes
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.particle_data_read,
+            self.sensor_constants.particle_data_bytes
         )
         self._extract_particle_data()
 
     def _extract_air_data(self):
         """Extract air data."""
-        if (len(self.raw_air_data) != SensorConstants.air_data_bytes):
+        if (len(self.raw_air_data) != self.sensor_constants.air_data_bytes):
             raise Exception('Incorrect number of Air Data bytes')
 
         self.temp_c = (
-            (self.raw_air_data[0] & SensorConstants.temperature_value_mask)
-            + (float(self.raw_air_data[1]) / 10.0)
+            (
+                self.raw_air_data[0]
+                & self.sensor_constants.temperature_value_mask
+            ) + (float(self.raw_air_data[1]) / 10.0)
         )
         if (
-            (self.raw_air_data[0] & SensorConstants.temperature_sign_mask) != 0
+            (
+                self.raw_air_data[0]
+                & self.sensor_constants.temperature_sign_mask
+            ) != 0
         ):
             # If the most-significant bit is set, the temperature is negative
             self.temp_c = -self.temp_c
@@ -183,7 +192,7 @@ class SensorData(object):
         """Extract air quality data."""
         if (
             len(self.raw_air_quality_data)
-            != SensorConstants.air_quality_data_bytes
+            != self.sensor_constants.air_quality_data_bytes
         ):
             raise Exception('Incorrect number of Air Quality Data bytes')
 
@@ -209,7 +218,9 @@ class SensorData(object):
 
     def _extract_light_data(self):
         """Extract light data."""
-        if (len(self.raw_light_data) != SensorConstants.light_data_bytes):
+        if (
+            len(self.raw_light_data) != self.sensor_constants.light_data_bytes
+        ):
             raise Exception(
                 'Incorrect number of Light Data bytes supplied to function'
             )
@@ -225,7 +236,9 @@ class SensorData(object):
 
     def _extract_sound_data(self):
         """Extract sound data."""
-        if (len(self.raw_sound_data) != SensorConstants.sound_data_bytes):
+        if (
+            len(self.raw_sound_data) != self.sensor_constants.sound_data_bytes
+        ):
             raise Exception(
                 'Incorrect number of Sound Data bytes supplied to function'
             )
@@ -235,15 +248,15 @@ class SensorData(object):
         )
         j = 2
         self.spl_bands_db = dict()
-        for i in range(0, SensorConstants.sound_freq_bands):
+        for i in range(0, self.sensor_constants.sound_freq_bands):
             self.spl_bands_db[i] = (
                 self.raw_sound_data[j]
                 + (float(self.raw_sound_data[
-                    j + SensorConstants.sound_freq_bands
+                    j + self.sensor_constants.sound_freq_bands
                 ]) / 10.0)
             )
             j += 1
-        j += SensorConstants.sound_freq_bands
+        j += self.sensor_constants.sound_freq_bands
 
         self.peak_amp = (
             self.raw_sound_data[j]
@@ -255,7 +268,7 @@ class SensorData(object):
 
     def _extract_particle_data(self):
         """Extract particle data."""
-        if (self.particle_sensor == SensorConstants.particle_sensor_off):
+        if (self.particle_sensor == self.sensor_constants.particle_sensor_off):
             self.duty_cycle_pc = None
             self.concentration = None
             self.conc_unit = None
@@ -263,7 +276,8 @@ class SensorData(object):
             return
 
         if (
-            len(self.raw_particle_data) != SensorConstants.particle_data_bytes
+            len(self.raw_particle_data)
+            != self.sensor_constants.particle_data_bytes
         ):
             raise Exception(
                 'Incorrect number of Particle Data bytes supplied to function'
@@ -285,11 +299,16 @@ class SensorData(object):
         else:
             self.particle_data_valid = False
 
-        if (self.particle_sensor == SensorConstants.particle_sensor_ppd42):
+        if (
+            self.particle_sensor == self.sensor_constants.particle_sensor_ppd42
+        ):
             self.conc_unit = "ppL"
 
-        elif (self.particle_sensor == SensorConstants.particle_sensor_sds011):
-            self.conc_unit = UnicodeConstants.sds011_conc
+        elif (
+            self.particle_sensor
+            == self.sensor_constants.particle_sensor_sds011
+        ):
+            self.conc_unit = self.unicode_constants.sds011_conc
 
     def interpret_aqi_value(self):
         """Provide a readable interpretation of the AQI (air quality index)."""
@@ -334,8 +353,8 @@ class SensorData(object):
         # [LSB, MSB]
         data_to_send = [(peak & 0x00FF), (peak >> 8)]
         self.i2c_bus.write_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.sound_interrupt_threshold_reg,
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.sound_interrupt_threshold_reg,
             data_to_send
         )
 
@@ -363,20 +382,20 @@ class SensorData(object):
             light_thres_lux_f2dp
         ]
         self.i2c_bus.write_i2c_block_data(
-            SensorConstants.i2c_addr_7bit_sb_open,
-            SensorConstants.light_interrupt_threshold_reg,
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.light_interrupt_threshold_reg,
             data_to_send
         )
 
     def __str__(self):
         """String magic method."""
         output = [
-            f'Temperature: {self.temp_c}{UnicodeConstants.celsius} / '
-            f'{self.temp_f}{UnicodeConstants.fahrenheit}',
+            f'Temperature: {self.temp_c}{self.unicode_constants.celsius} / '
+            f'{self.temp_f}{self.unicode_constants.fahrenheit}',
             f'Air Pressure: {self.pressure}Pa',
             f'Humidity: {self.humidity}%',
             'Gas Sensor Resistance: '
-            f'{self.gas_sensor_resistance}{UnicodeConstants.ohm}',
+            f'{self.gas_sensor_resistance}{self.unicode_constants.ohm}',
             f'Air Quality: {self.aqi}',
             f'Air Quality Interpreted: {self.int_aqi}',
             f'Air Quality CO2e: {self.co2e}',
