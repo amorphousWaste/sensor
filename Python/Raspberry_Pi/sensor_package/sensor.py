@@ -102,6 +102,7 @@ class SensorData(object):
         self.get_air_quality_data()
         self.get_light_data()
         self.get_sound_data()
+        self.get_particle_data()
 
     def get_air_data(self):
         """Get air data."""
