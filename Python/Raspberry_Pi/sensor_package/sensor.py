@@ -443,3 +443,7 @@ class SensorData(object):
             'conc_unit': self.conc_unit,
             'particle_data_valid': self.particle_data_valid,
         }
+
+    def __iter__(self):
+        """Iter magic method."""
+        return iter(self.__dict__().items())
