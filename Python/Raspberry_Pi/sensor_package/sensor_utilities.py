@@ -200,15 +200,22 @@ def format_particle_data(
             Default is True.
     """
     data = dict()
+    # If there is no particle sensor, return N/A for all values
+    if sensor_data.particle_sensor == SensorConstants().particle_sensor_off:
+        data['Particle Sensor Duty Cycle'] = 'N/A'
+        data['Particle Concentration'] = 'N/A'
+        data['Particle Data Valid'] = 'N/A'
+        return data
+
     data['Particle Sensor Duty Cycle'] = f'{sensor_data.duty_cycle_pc:.2f} %'
     data['Particle Concentration'] = (
         f'{sensor_data.concentration:.2f} {sensor_data.conc_unit}'
     )
 
     if sensor_data.particle_data_valid == 0:
-        data['Particle data valid'] = 'No (Initializing)'
+        data['Particle Data Valid'] = 'No (Initializing)'
     else:
-        data['Particle data valid'] = 'Yes'
+        data['Particle Data Valid'] = 'Yes'
 
     if file_path:
         write_data(file_path, data, overwrite)
