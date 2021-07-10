@@ -84,7 +84,7 @@ def format_air_data(
     data['Pressure'] = f'{sensor_data.pressure} Pa'
     data['Humidity'] = f'{sensor_data.humidity:.1f} %'
     data['Gas Sensor Resistance'] = (
-        f'{sensor_data.gas_sensor_resistance} {UnicodeConstants.ohm}'
+        f'{sensor_data.gas_sensor_resistance} {UnicodeConstants().ohm}'
     )
 
     if file_path:
