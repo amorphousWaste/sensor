@@ -60,6 +60,20 @@ class SensorData(object):
         while (gpio.input(self.sensor_constants.ready_pin) == 1):
             sleep(0.05)
 
+        # Tell the Pi to monitor READY for a falling edge event
+        # (high-to-low voltage change)
+        gpio.add_event_detect(self.sensor_constants.ready_pin, gpio.FALLING)
+
+    def get_gpio(self) -> gpio:
+        """Return the initialized gpio module."""
+        return gpio
+
+    def cleanup_gpio(self):
+        """Cleanup the gpio after execution."""
+        gpio.cleanup()
+
+    def refresh(self):
+        """Refresh the sensor data."""
         # Reset MS430 to clear any previous state:
         self.i2c_bus.write_byte(
             self.sensor_constants.i2c_addr_7bit_sb_open,
@@ -70,10 +84,6 @@ class SensorData(object):
         # Wait for reset completion and entry to standby mode
         while (gpio.input(self.sensor_constants.ready_pin) == 1):
             sleep(0.05)
-
-        # Tell the Pi to monitor READY for a falling edge event
-        # (high-to-low voltage change)
-        gpio.add_event_detect(self.sensor_constants.ready_pin, gpio.FALLING)
 
         # Initiate an on-demand data measurement
         self.i2c_bus.write_byte(
@@ -88,16 +98,6 @@ class SensorData(object):
         # Brief final sleep to stabalize sensors
         sleep(1.5)
 
-    def get_gpio(self) -> gpio:
-        """Return the initialized gpio module."""
-        return gpio
-
-    def cleanup_gpio(self):
-        """Cleanup the gpio after execution."""
-        gpio.cleanup()
-
-    def refresh(self):
-        """Refresh the sensor data."""
         self.get_air_data()
         self.get_air_quality_data()
         self.get_light_data()
