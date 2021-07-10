@@ -391,8 +391,8 @@ class SensorData(object):
     def __str__(self):
         """String magic method."""
         output = [
-            f'Temperature: {self.temp_c}{self.unicode_constants.celsius} / '
-            f'{self.temp_f}{self.unicode_constants.fahrenheit}',
+            f'Temperature: {self.temp_c:.1f}{self.unicode_constants.celsius} /'
+            f' {self.temp_f:.1f}{self.unicode_constants.fahrenheit}',
             f'Air Pressure: {self.pressure}Pa',
             f'Humidity: {self.humidity}%',
             'Gas Sensor Resistance: '
