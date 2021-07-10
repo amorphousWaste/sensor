@@ -112,14 +112,14 @@ def format_air_quality_data(
         data['Air Quality Index'] = (
             f'{sensor_data.aqi:.1f} ({sensor_data.aqi_accuracy})'
         )
-        data[f'Estimated CO{UnicodeConstants.subscript_2}'] = (
+        data[f'Estimated CO{UnicodeConstants().subscript_2}'] = (
             f'{sensor_data.co2e:.1f} ppm'
         )
         data['Equivalent Breath VOC'] = f'{sensor_data.bvoc:.2f} ppm'
 
     else:
         data['Air Quality Index'] = 'N/A'
-        data[f'Estimated CO{UnicodeConstants.subscript_2}'] = 'N/A'
+        data[f'Estimated CO{UnicodeConstants().subscript_2}'] = 'N/A'
         data['Equivalent Breath VOC'] = 'N/A'
 
     data['Air Quality Accuracy'] = sensor_data.int_aqi
