@@ -82,6 +82,7 @@ class SensorConstants(object):
         # Device modes
         self.standby_mode = 0
         self.cycle_mode = 1
+        self.on_demand = 2
 
         self.light_interrupt_threshold_bytes = 3
         self.sound_interrupt_threshold_bytes = 2
