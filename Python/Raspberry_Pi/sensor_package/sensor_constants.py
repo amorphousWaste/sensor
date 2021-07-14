@@ -92,11 +92,6 @@ class SensorConstants(object):
         self.sound_band_mids_hz = [125, 250, 500, 1000, 2000, 4000]
         self.sound_band_edges_hz = [88, 177, 354, 707, 1414, 2828, 5657]
 
-        # Cycle mode time period
-        self.cycle_period_3_s = 0
-        self.cycle_period_100_s = 1
-        self.cycle_period_300_s = 2
-
         # Sound interrupt type
         self.sound_int_type_latch = 0
         self.sound_int_type_comp = 1
