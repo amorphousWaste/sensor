@@ -15,13 +15,14 @@
 #  https://github.com/metriful/sensor
 
 import argparse
+import time
 
 from typing import Optional
 
-from sensor import SensorData
+from sensor_package.sensor import Sensor
 
-from sensor_constants import SensorConstants
-from unicode_constants import UnicodeConstants
+from sensor_package.sensor_constants import SensorConstants
+from sensor_package.unicode_constants import UnicodeConstants
 
 
 def get_args():
@@ -64,39 +65,48 @@ def get_args():
 
 def read_temp(write_data: Optional[str] = ''):
     """Simple example of reading the temperature and humidity."""
-    sensor_data = SensorData()
+    sensor = Sensor()
+    sensor.measure()
     print(
-        f'The temperature is: {sensor_data.temp_c:.1f}'
-        f'{UnicodeConstants.celsius} '
-        f'/ {sensor_data.temp_f}{UnicodeConstants.fahrenheit}'
+        f'The temperature is: {sensor.temp_c:.1f}'
+        f'{UnicodeConstants().celsius} '
+        f'/ {sensor.temp_f}{UnicodeConstants().fahrenheit}'
     )
-    print(f'The humidity is: {sensor_data.humidity:.1f} %')
+    print(f'The humidity is: {sensor.humidity:.1f} %')
 
-    sensor_data.cleanup_gpio()
+    sensor.cleanup_gpio()
 
 
 def read_sound(write_data: Optional[str] = ''):
     """Simple example of reading the sound level."""
-    sensor_data = SensorData()
-    print(f'The sound pressure level is: {sensor_data.spl_dba} dBA')
+    sensor = Sensor()
+    sensor.measure()
+    print(f'The sound pressure level is: {sensor.spl_dba} dBA')
 
-    sensor_data.cleanup_gpio()
+    sensor.cleanup_gpio()
 
 
 def cycle_reads(cycle_time: [int], write_data: Optional[str] = ''):
     """Simple example of cyclicaly reading data."""
-    sensor_data = SensorData(
+    sensor = Sensor(
         cycle_mode=SensorConstants().cycle_mode, cycle_time=cycle_time
     )
-    while True:
+    sensor.cycle()
+    x = 1
+    # while True:
+    while x <= 10:
         print(
-            f'The temperature is: {sensor_data.temp_c:.1f}'
-            f'{UnicodeConstants.celsius} '
-            f'/ {sensor_data.temp_f}{UnicodeConstants.fahrenheit}'
+            f'The temperature is: {sensor.temp_c:.1f}'
+            f'{UnicodeConstants().celsius} '
+            f'/ {sensor.temp_f}{UnicodeConstants().fahrenheit}'
         )
-        print(f'The humidity is: {sensor_data.humidity:.1f} %')
-        print(f'The sound pressure level is: {sensor_data.spl_dba} dBA')
+        print(f'The humidity is: {sensor.humidity:.1f} %')
+        print(f'The sound pressure level is: {sensor.spl_dba} dBA')
         print('-' * 50)
+        x += 1
+        time.sleep(cycle_time)
+
+    sensor.standby()
 
 
 if __name__ == '__main__':
