@@ -15,6 +15,7 @@ import RPi.GPIO as gpio
 
 from sensor_constants import SensorConstants
 from unicode_constants import UnicodeConstants
+from .setup import LOG
 
 
 class SensorData(object):
