@@ -7,6 +7,7 @@ each cycle time.
 """
 
 import smbus
+import threading
 import time
 import traceback
 from typing import Optional
@@ -62,23 +63,19 @@ class Sensor(object):
         self.sensor_constants = SensorConstants()
         self.unicode_constants = UnicodeConstants()
 
-        self.cycle_mode = cycle_mode
-        if not self.cycle_mode:
-            self.cycle_mode = self.sensor_constants.on_demand
+        self.mode = SensorMode(mode, cycle_time)
+        self.cycle_status = CycleStatus()
 
-        self.cycle_mode = cycle_time
-        if not self.cycle_time:
-            self.cycle_time = 5
-
-        self.particle_sensor = particle_sensor
-        if not self.particle_sensor:
-            self.particle_sensor = self.sensor_constants.particle_sensor_off
+        self.particle_sensor = (
+            particle_sensor or self.sensor_constants.particle_sensor_off
+        )
 
         self._init_hardware()
-        self.refresh()
 
     def _init_hardware(self):
         """Set up the Raspberry Pi GPIO."""
+        self.cleanup_gpio()
+
         gpio.setwarnings(False)
         gpio.setmode(gpio.BOARD)
         gpio.setup(self.sensor_constants.ready_pin, gpio.IN)
@@ -93,47 +90,33 @@ class Sensor(object):
         while (gpio.input(self.sensor_constants.ready_pin) == 1):
             time.sleep(0.05)
 
+        # Reset MS430 to clear any previous state:
+        self.i2c_bus.write_byte(
+            self.sensor_constants.i2c_addr_7bit_sb_open,
+            self.sensor_constants.reset_cmd
+        )
+        time.sleep(0.005)
+
+        # Wait for reset completion and entry to standby mode
+        while (gpio.input(self.sensor_constants.ready_pin) == 1):
+            time.sleep(0.05)
+
         # Tell the Pi to monitor READY for a falling edge event
         # (high-to-low voltage change)
         gpio.add_event_detect(self.sensor_constants.ready_pin, gpio.FALLING)
-
-        self._set_cycle_mode(self.cycle_mode)
 
     def get_gpio(self) -> gpio:
         """Return the initialized gpio module."""
         return gpio
 
-    def _set_cycle_mode(self):
-        """Set the sensor cycle mode."""
-        # Set standby mode
-        if self.cycle_mode == self.sensor_constants.standby_mode:
-            byte = self.sensor_constants.standby_mode_cmd
-
-        # Set data measurement on a cycle
-        elif self.cycle_mode == self.sensor_constants.cycle_mode:
-            byte = self.sensor_constants.cycle_mode_cmd
-            self.i2c_bus.write_i2c_block_data(
-                self.sensor_constants.i2c_7bit_address,
-                self.sensor_constants.cycle_time_period_reg,
-                [self.cycle_time],
-            )
-
-        # Set an on-demand data measurement
-        else:
-            byte = self.sensor_constants.on_demand_measure_cmd
-
-        self.i2c_bus.write_byte(self.sensor_constants.i2c_7bit_address, byte)
-
-        self.refresh()
-
-    def change_cycle_mode(
-        self, cycle_mode: [int], cycle_time: Optional[int] = None
+    def change_sensor_mode(
+        self, mode: Optional[int] = None, cycle_time: Optional[int] = None
     ):
         """Change the sensor cycle mode.
 
         The possibilities for the cycle mode are:
             SensorConstants().on_demand: Take a measurement when requested
-            SensorConstants().cycle_mode: Take continuoius measurements
+            SensorConstants().cycle_mode: Take continuous measurements
             SensorConstants().standby_mode: Do nothing
 
         cycle_mode (int): Mode to start the sensor in.
@@ -142,10 +125,7 @@ class Sensor(object):
         cycle_time (int): Time between reads on cycle mode.
             Default is None which will become: 5
         """
-        raise NotImplementedError(
-            'Changing the cycle mode after instantiation is not currently '
-            'supported.'
-        )
+        self.mode = SensorMode(mode, cycle_time)
 
     def is_ready(self) -> bool:
         """Return True when ready.
@@ -173,25 +153,21 @@ class Sensor(object):
         """Cleanup the gpio after execution."""
         gpio.cleanup()
 
-    def refresh(self):
-        """Refresh the sensor data."""
-        # If the sensor is in standby, don't do anything
-        if self.cycle_mode == self.sensor_constants.standby_mode:
-            return
+    def standby(self):
+        """Put the sensor into standby mode."""
+        LOG.debug('Going into standby mode.')
+        # Trigger the sensor into standby mode
+        self.i2c_bus.write_byte(
+            self.sensor_constants.i2c_7bit_address, self.mode.trigger_byte
+        )
 
-        # If the sensor is in on demand read mode,
-        # clear the sensor data wait for the reset.
-        if self.cycle_mode == self.sensor_constants.on_demand:
-            # Reset MS430 to clear any previous state:
-            self.i2c_bus.write_byte(
-                self.sensor_constants.i2c_addr_7bit_sb_open,
-                self.sensor_constants.reset_cmd
-            )
-            time.sleep(0.005)
-
-            # Wait for reset completion and entry to standby mode
-            while (gpio.input(self.sensor_constants.ready_pin) == 1):
-                time.sleep(0.05)
+    def measure(self):
+        """Take an on demand measurement."""
+        LOG.debug('Taking an on demand measurement.')
+        # Trigger an on demand measurement
+        self.i2c_bus.write_byte(
+            self.sensor_constants.i2c_7bit_address, self.mode.trigger_byte
+        )
 
         try:
             if self.is_ready():
@@ -203,6 +179,63 @@ class Sensor(object):
         except Exception as e:
             print(e)
             traceback.print_exc()
+
+    def cycle(self):
+        """Take measurements on a cycle.
+
+        This process runs in a seperate thread so it can be interrupted at
+        any point.
+
+        This will repeat until a keyboard interrupt is given.
+        """
+        LOG.debug('Taking cyclical measurements.')
+        # Trigger a cyclical measurement
+        self.i2c_bus.write_i2c_block_data(
+            self.sensor_constants.i2c_7bit_address,
+            self.sensor_constants.cycle_time_period_reg,
+            [self.cycle_time],
+        )
+
+        self.cycle_status.active = True
+        threading.Thread(target=self._run_cycle).start()
+
+    def _run_cycle(self):
+        """The actual cycle function.
+
+        This is seperated out so that it can run in its own thread.
+        """
+        count = 1
+        while self.cycle_status.is_active or count <= 20:
+            # If the main thread is no longer alive, terminate the loop
+            if not threading.main_thread().is_alive():
+                break
+
+            try:
+                if self.is_ready():
+                    self._get_all_data()
+
+            except KeyboardInterrupt:
+                print('Stopping')
+                break
+
+            except IOError as e:
+                print(e)
+                break
+
+            except Exception as e:
+                print(e)
+                traceback.print_exc()
+                break
+
+            finally:
+                count += 1
+
+    def stop_cycle(self):
+        """Stop the cycle measurements.
+
+        This will terminate the loop in _run_cycle.
+        """
+        self.cycle_status.active = False
 
     def _get_all_data(self):
         """Get all the available data."""
@@ -453,6 +486,7 @@ class Sensor(object):
             self.int_aqi_accuracy = (
                 "Not yet valid, self-calibration incomplete"
             )
+            LOG.warning(self.int_aqi_accuracy)
 
     def set_sound_interrupt_threshold(self, peak: int):
         """Set the threshold for triggering a sound interrupt.
