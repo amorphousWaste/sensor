@@ -13,10 +13,12 @@ from typing import Optional
 
 import RPi.GPIO as gpio
 
-from sensor_constants import SensorConstants
-from unicode_constants import UnicodeConstants
 from .setup import LOG
 
+from .cycle_status import CycleStatus
+from .sensor_mode import SensorMode
+from .sensor_constants import SensorConstants
+from .unicode_constants import UnicodeConstants
 
 class SensorData(object):
     """SensorData class."""
