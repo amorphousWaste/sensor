@@ -20,15 +20,16 @@ from .sensor_mode import SensorMode
 from .sensor_constants import SensorConstants
 from .unicode_constants import UnicodeConstants
 
-class SensorData(object):
-    """SensorData class."""
+
+class Sensor(object):
+    """Sensor class."""
 
     # Timeout in seconds for waiting on the ready pin.
     TIMEOUT = 5
 
     def __init__(
         self,
-        cycle_mode: Optional[int] = None,
+        mode: Optional[int] = None,
         cycle_time: Optional[int] = None,
         particle_sensor: Optional[int] = None,
     ):
@@ -56,7 +57,7 @@ class SensorData(object):
                 Default is None which will become:
                     SensorConstants.particle_sensor_off (0)
         """
-        super(SensorData, self).__init__()
+        super(Sensor, self).__init__()
 
         self.sensor_constants = SensorConstants()
         self.unicode_constants = UnicodeConstants()
