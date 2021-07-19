@@ -1,8 +1,9 @@
-"""Sensor data.
+"""Sensor.
 
-When instantiated, this object will initialize the hardware sensor and collect
-an initial round of data. Each piece of data is available individually and
-can be refreshed by calling the 'refresh()' method.
+When instantiated, this object will initialize the hardware sensor.
+To have the sensor perform a measurement, call the 'measure()' method. If using
+cycle mode, you can wrap the 'measure()' call in a loop that will trigger
+each cycle time.
 """
 
 import smbus
@@ -30,22 +31,23 @@ class SensorData(object):
     ):
         """Init.
 
-        The possibilities for the cycle mode are:
-            SensorConstants().on_demand: Take a measurement when requested
-            SensorConstants().cycle_mode: Take continuoius measurements
-            SensorConstants().standby_mode: Do nothing
+        The possibilities for the mode are:
+            SensorConstants().standby_mode: Do nothing (0)
+            SensorConstants().cycle_mode: Take continuous measurements (1)
+            SensorConstants().on_demand: Take a measurement when requested (2)
 
         The possibilities for the particle sensor are:
-            SensorConstants().particle_sensor_off: if no sensor is connected
-            SensorConstants().particle_sensor_ppd42: for the Shinyei PPD42
-            SensorConstants().particle_sensor_sds011: for the Nova SDS011
+            SensorConstants().particle_sensor_off: No sensor is connected
+            SensorConstants().particle_sensor_ppd42: For the Shinyei PPD42
+            SensorConstants().particle_sensor_sds011: For the Nova SDS011
 
         Args:
-            cycle_mode (int): Mode to start the sensor in.
+            mode (int): Mode to start the sensor in.
                 Default is None which will become:
                     SensorConstants().on_demand (2)
             cycle_time (int): Time between reads on cycle mode.
                 Default is None which will become: 5
+                If not using cycle mode, this value is irrelevant.
             particle_sensor (int): The type of particle sensor attached,
                 if any.
                 Default is None which will become:
