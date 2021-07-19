@@ -1,18 +1,19 @@
-#  simple_read_T_H.py
+"""Examples.
 
-#  Example code for using the Metriful MS430 to measure humidity and
-#  temperature.
-#  This example is designed to run with Python 3 on a Raspberry Pi.
+Example code for using the Metriful MS430 to measure humidity and
+temperature.
+This example is designed to run with Python 3 on a Raspberry Pi.
 
-#  Demonstrates multiple ways of reading and displaying the temperature
-#  and humidity data. View the output in the terminal. The other data
-#  can be measured and displayed in a similar way.
+Demonstrates multiple ways of reading and displaying the temperature
+and humidity data. View the output in the terminal. The other data
+can be measured and displayed in a similar way.
 
-#  Copyright 2020 Metriful Ltd.
-#  Licensed under the MIT License - for further details see LICENSE.txt
+Copyright 2020 Metriful Ltd.
+Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit
-#  https://github.com/metriful/sensor
+For code examples, datasheet and user guide, visit
+https://github.com/metriful/sensor
+"""
 
 import argparse
 import time
